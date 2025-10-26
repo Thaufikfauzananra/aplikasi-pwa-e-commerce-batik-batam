@@ -23,18 +23,19 @@ export default function PembayaranPage() {
   const [bank, setBank] = useState("");
   const [ewallet, setEwallet] = useState("");
 
-  // 🔁 ambil data checkout dari keranjang
+  // 🔁 Ambil data checkout dari localStorage (keranjang/wishlist)
   useEffect(() => {
     const data = localStorage.getItem("checkoutData");
     if (data) setPesanan(JSON.parse(data));
   }, []);
 
+  // 💰 Perhitungan total harga
   const totalHarga = pesanan.reduce(
-    (acc, item) => acc + item.harga * (item.jumlah || 1),
+    (acc, item) => acc + (item.harga || item.price) * (item.jumlah || 1),
     0
   );
 
-  // 🚀 tombol konfirmasi pembayaran (simulasi Midtrans)
+  // 🚀 Tombol konfirmasi pembayaran (simulasi Midtrans)
   const handleKonfirmasi = async () => {
     if (!metode) {
       alert("Silakan pilih metode pembayaran terlebih dahulu!");
@@ -49,11 +50,12 @@ export default function PembayaranPage() {
       return;
     }
 
-    // nanti diganti panggil Midtrans Snap
-    // window.snap.pay(snapToken);
-
+    // Simulasi redirect sukses
+    alert("Pembayaran berhasil disimpan 💳");
     localStorage.removeItem("checkoutData");
-    window.location.href = "/pembayaran-berhasil";
+    setTimeout(() => {
+      window.location.href = "/pembayaran-berhasil";
+    }, 800);
   };
 
   const bankOptions = [
@@ -109,7 +111,7 @@ export default function PembayaranPage() {
                     Size: {item.ukuran || "-"}, Stok: {item.stok || 1}
                   </p>
                   <p className="text-[#704d31] text-sm font-semibold">
-                    Rp {(item.harga * item.jumlah).toLocaleString("id-ID")}
+                    Rp {((item.harga || item.price) * item.jumlah).toLocaleString("id-ID")}
                   </p>
                   <p className="text-xs text-gray-500">Batik Cindur Batam</p>
                 </div>
@@ -251,7 +253,7 @@ export default function PembayaranPage() {
       <nav className="fixed bottom-0 left-0 right-0 bg-[#fefaf6] border-t border-[#d6c2aa] shadow-sm flex justify-around py-2 z-50">
         {[
           { name: "Beranda", icon: Home, href: "/BerandaPembeli" },
-          { name: "Kategori", icon: Folder, href: "/kategori" },
+          { name: "Kategori", icon: Folder, href: "/kategori_pembeli" },
           { name: "Wishlist", icon: Heart, href: "/wishlist" },
           { name: "Keranjang", icon: ShoppingCart, href: "/keranjang" },
           { name: "Profil", icon: User, href: "/profil" },

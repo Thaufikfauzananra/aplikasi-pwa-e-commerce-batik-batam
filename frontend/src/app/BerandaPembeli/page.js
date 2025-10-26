@@ -12,46 +12,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { dataProduk } from "@/lib/data/dataProduk";
 
 export default function BerandaPembeli() {
-  const [products, setProducts] = useState([
-    {
-      id: 1,
-      name: "Batik Gonggong Elegan",
-      price: 250000,
-      category: "Pakaian Wanita",
-      image: "/wanita1.jpg",
-    },
-    {
-      id: 2,
-      name: "Batik Leluhur Hitam",
-      price: 320000,
-      category: "Pakaian Pria",
-      image: "/pria2.jpg",
-    },
-    {
-      id: 3,
-      name: "Batik Cindur Pink Blossom",
-      price: 280000,
-      category: "Pakaian Wanita",
-      image: "/wanita3.jpg",
-    },
-    {
-      id: 4,
-      name: "Batik Gonggong Batam",
-      price: 150000,
-      category: "Pakaian Pria",
-      image: "/pria3.jpg",
-    },
-    {
-      id: 5,
-      name: "Tas Batik Kalung Cindur",
-      price: 150000,
-      category: "Aksesori",
-      image: "/tas.jpg",
-    },
-  ]);
-
+  const [products, setProducts] = useState(dataProduk);
   const [wishlist, setWishlist] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
@@ -66,7 +30,8 @@ export default function BerandaPembeli() {
         p.category.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  const toggleWishlist = (id) => {
+  const toggleWishlist = (id, e) => {
+    e.stopPropagation();
     setWishlist((prev) =>
       prev.includes(id)
         ? prev.filter((item) => item !== id)
@@ -77,7 +42,6 @@ export default function BerandaPembeli() {
   return (
     <>
       <div className="min-h-screen bg-[#fefaf6] text-[#5a3921] flex flex-col pb-20">
-        {/* 🔝 Navbar */}
         <header className="flex justify-between items-center px-10 py-5 bg-white shadow-md relative">
           <div className="flex items-center gap-3">
             <Image
@@ -90,7 +54,6 @@ export default function BerandaPembeli() {
             <h1 className="text-2xl font-semibold">Batik Cindur Batam</h1>
           </div>
 
-          {/* 🔍 Search bar */}
           {showSearch && (
             <div className="absolute right-32 top-1/2 transform -translate-y-1/2 bg-white border border-[#b08968]/50 rounded-full shadow-md px-4 py-1 flex items-center gap-2 w-[250px] transition-all duration-300">
               <Search className="w-4 h-4 text-[#b08968]" />
@@ -111,7 +74,6 @@ export default function BerandaPembeli() {
             </div>
           )}
 
-          {/* 🔘 Ikon kanan (sudah terhubung) */}
           <div className="flex items-center gap-5">
             <button
               onClick={() => setShowSearch(!showSearch)}
@@ -136,7 +98,6 @@ export default function BerandaPembeli() {
           </div>
         </header>
 
-        {/* 🖼️ Banner */}
         <section className="relative w-full h-[400px] mt-5 rounded-xl overflow-hidden mx-auto max-w-6xl shadow-lg">
           <Image
             src="/barelang.jpg"
@@ -154,7 +115,6 @@ export default function BerandaPembeli() {
           </div>
         </section>
 
-        {/* 🧵 Kategori */}
         <section className="w-full flex justify-center mt-10">
           <div className="w-full max-w-6xl px-4">
             <h3 className="text-xl font-semibold mb-5">Kategori</h3>
@@ -174,7 +134,6 @@ export default function BerandaPembeli() {
           </div>
         </section>
 
-        {/* 🛍️ Produk Terbaru */}
         <section className="w-full flex justify-center mt-12 flex-1">
           <div className="w-full max-w-6xl px-4">
             <h3 className="text-xl font-semibold mb-6">Produk Terbaru</h3>
@@ -188,43 +147,37 @@ export default function BerandaPembeli() {
                 {filteredProducts.map((p) => (
                   <div
                     key={p.id}
-                    className="bg-white border border-[#b08968]/30 rounded-xl shadow-md hover:shadow-lg transition-all overflow-hidden w-full max-w-[270px]"
+                    onClick={() => router.push(`/detail_produk/${p.id}`)}
+                    className="bg-white border border-[#b08968]/30 rounded-xl shadow-md hover:shadow-lg transition-all overflow-hidden w-full max-w-[270px] cursor-pointer"
                   >
-                    {/* 📸 Gambar Produk */}
-                    <div className="w-full h-64 overflow-hidden">
+                    <div className="relative w-full h-64 overflow-hidden">
                       <Image
                         src={p.image}
                         alt={p.name}
-                        width={300}
-                        height={300}
-                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                        fill
+                        className="object-cover hover:scale-105 transition-transform duration-300"
                       />
-                    </div>
-
-                    {/* 🏷️ Info Produk + Wishlist */}
-                    <div className="p-4 flex items-center justify-between">
-                      <div>
-                        <h3 className="text-[#5a3921] font-medium text-base mb-1 truncate">
-                          {p.name}
-                        </h3>
-                        <p className="text-[#704d31] font-semibold text-sm">
-                          Rp {Number(p.price).toLocaleString("id-ID")}
-                        </p>
-                      </div>
-
                       <button
-                        onClick={() => toggleWishlist(p.id)}
-                        className="p-2 rounded-full border border-[#b08968]/50 hover:bg-[#fdf3ec] transition-all"
+                        onClick={(e) => toggleWishlist(p.id, e)}
+                        className="absolute bottom-3 right-3 bg-white/80 p-1.5 rounded-full shadow-sm hover:bg-[#fdf3ec] transition"
                       >
                         <Heart
                           size={18}
-                          className={`transition-colors duration-300 ${
+                          className={`${
                             wishlist.includes(p.id)
                               ? "fill-[#704d31] text-[#704d31]"
                               : "text-[#704d31]"
-                          }`}
+                          } transition-colors`}
                         />
                       </button>
+                    </div>
+                    <div className="p-4">
+                      <h3 className="text-[#5a3921] font-medium text-base mb-1 truncate">
+                        {p.name}
+                      </h3>
+                      <p className="text-[#704d31] font-semibold text-sm">
+                        Rp {Number(p.price).toLocaleString("id-ID")}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -234,7 +187,6 @@ export default function BerandaPembeli() {
         </section>
       </div>
 
-      {/* 🧭 Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-[#fefaf6] border-t border-[#d6c2aa] shadow-sm flex justify-around py-2 z-50">
         {[
           { name: "Beranda", icon: Home, href: "/BerandaPembeli" },
