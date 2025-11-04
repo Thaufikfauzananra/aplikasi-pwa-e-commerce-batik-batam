@@ -1,0 +1,30 @@
+// Backup - Jika ingin menambahkan fallback data sementara
+// Uncomment bagian ini jika ingin aplikasi tetap menampilkan produk walaupun backend tidak running
+
+const FALLBACK_PRODUCTS = [
+  {
+    id: 1,
+    name: "Blus Pesona Cindur",
+    price: 249000,
+    image: "/wanita1.jpg",
+    category: "wanita",
+  },
+  {
+    id: 2,
+    name: "Kemeja Batik Lengan Pendek",
+    price: 299000,
+    image: "/pria1.jpg",
+    category: "pria",
+  },
+  {
+    id: 3,
+    name: "Blus Anggun Cindur",
+    price: 249000,
+    image: "/wanita2.jpg",
+    category: "wanita",
+  },
+];
+
+// Di dalam catch block, bisa menggunakan:
+// setProducts(FALLBACK_PRODUCTS); // untuk menampilkan data fallback
+

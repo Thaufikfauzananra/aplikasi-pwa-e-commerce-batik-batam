@@ -1,0 +1,22 @@
+{
+  "name": "Batik Cindur Batam",
+  "short_name": "Cindur Batik",
+  "description": "Aplikasi PWA e-Commerce Batik Cindur Batam",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fefaf6",
+  "theme_color": "#704d31",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icons/logo_batik.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/logo_batik.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

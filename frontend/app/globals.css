@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+:root {
+  --background: #fefaf6;
+  --foreground: #5a3921;
+  --primary: #704d31;
+  --primary-hover: #5a3921;
+  --secondary: #b08968;
+  --border: #d6c2aa;
+  --light-bg: #fffdf9;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Mobile first - Bottom nav padding */
+@media (max-width: 768px) {
+  body {
+    padding-bottom: 70px;
+  }
+}
+
+/* Web view - Sidebar navigation */
+@media (min-width: 769px) {
+  body {
+    padding-bottom: 0;
+  }
+}
