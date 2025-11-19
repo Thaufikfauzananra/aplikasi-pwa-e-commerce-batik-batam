@@ -14,9 +14,16 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return response()->json([
-        'message' => 'Laravel server aktif 🚀 (route web)',
-        'info' => 'Buka /api/hello untuk melihat API versi JSON.',
+        'message' => 'Laravel server aktif 🚀',
+        'info' => 'Backend API untuk Batik Cindur Batam',
+        'api_docs' => [
+            'test' => '/api/hello',
+            'products' => '/api/products',
+            'register' => 'POST /api/register',
+            'login' => 'POST /api/login',
+        ],
     ]);
 });
-//
+
+// Include API routes
 require __DIR__ . '/api.php';

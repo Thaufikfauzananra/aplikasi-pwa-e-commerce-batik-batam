@@ -3,7 +3,10 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\AddressController;
 
 /*
 |--------------------------------------------------------------------------
@@ -23,32 +26,39 @@ Route::get('/hello', function () {
     ]);
 });
 
-// 🔹 PRODUK SAMPLE
-Route::get('/products', function () {
-    return response()->json([
-        [
-            'id' => 1,
-            'name' => 'Kemeja Batik Lengan Panjang',
-            'price' => 299000,
-            'image' => '/wanita1.jpg',
-        ],
-        [
-            'id' => 2,
-            'name' => 'Dress Tenun Cindur',
-            'price' => 299000,
-            'image' => '/wanita2.jpg',
-        ],
-        [
-            'id' => 3,
-            'name' => 'Kemeja Batik Pendek',
-            'price' => 199000,
-            'image' => '/pria2.jpg',
-        ],
-    ]);
-});
-
-// 🔹 REGISTER (contoh Auth)
+// 🔹 AUTHENTICATION (Public Routes)
 Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
 
-// 🔹 MIDTRANS PAYMENT GATEWAY
-Route::post('/create-transaction', [PaymentController::class, 'createTransaction']);
+// 🔹 PRODUCTS (Public Routes)
+Route::get('/products', [ProductController::class, 'index']);
+Route::get('/products/{id}', [ProductController::class, 'show']);
+
+// 🔹 PROTECTED ROUTES (Perlu Authentication)
+Route::middleware('auth:sanctum')->group(function () {
+    // Auth routes
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/me', [AuthController::class, 'me']);
+    Route::put('/change-password', [AuthController::class, 'changePassword']);
+    
+    // Notifications
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::put('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead']);
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
+    
+    // Addresses
+    Route::get('/addresses', [AddressController::class, 'index']);
+    Route::post('/addresses', [AddressController::class, 'store']);
+    Route::put('/addresses/{id}', [AddressController::class, 'update']);
+    Route::put('/addresses/{id}/set-default', [AddressController::class, 'setDefault']);
+    Route::delete('/addresses/{id}', [AddressController::class, 'destroy']);
+    
+    // MIDTRANS PAYMENT GATEWAY
+    Route::post('/create-transaction', [PaymentController::class, 'createTransaction']);
+    
+    // PRODUCTS (Admin only - CRUD)
+    Route::post('/products', [ProductController::class, 'store']);
+    Route::match(['put', 'post'], '/products/{id}', [ProductController::class, 'update']); // Support both PUT and POST (method spoofing)
+    Route::delete('/products/{id}', [ProductController::class, 'destroy']);
+});
