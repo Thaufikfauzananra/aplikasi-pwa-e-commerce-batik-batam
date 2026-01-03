@@ -34,13 +34,7 @@ app.use((req, res, next) => {
 
 // Routes
 app.use('/api/health', healthRoutes);
-app.use('/api/auth', authRoutes);
-app.post('/api/register', (req, res) => {
-  res.redirect('/api/auth/register');
-});
-app.post('/api/login', (req, res) => {
-  res.redirect('/api/auth/login');
-});
+app.use('/api', authRoutes);  // This handles /api/register, /api/login, etc.
 app.get('/api/hello', (req, res) => {
   res.json({
     message: 'Halo dari Express Backend! 🎉',

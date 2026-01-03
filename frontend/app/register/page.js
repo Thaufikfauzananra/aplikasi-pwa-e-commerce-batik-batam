@@ -39,6 +39,14 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
+      console.log("📤 Sending register request:", {
+        name,
+        email,
+        password_length: password.length,
+        password_match: password === confirmPassword,
+        api_url: process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:3001/api"
+      });
+      
       const response = await api.post("/register", {
         name,
         email,
@@ -73,10 +81,41 @@ export default function RegisterPage() {
         router.push("/login");
       }
     } catch (error) {
-      console.error("❌ Register gagal:", error.response?.data || error.message);
-      const errorMessage = error.response?.data?.message || error.response?.data?.errors 
-        ? JSON.stringify(error.response.data.errors || error.response.data.message)
-        : "Registrasi gagal! Cek kembali data kamu.";
+      console.error("❌ Register gagal:", {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+        config: error.config?.url
+      });
+      
+      let errorMessage = "Registrasi gagal! ";
+      
+      // Jika ada response dari server
+      if (error.response?.data) {
+        // Jika ada message field
+        if (error.response.data.message) {
+          errorMessage += error.response.data.message;
+        }
+        // Jika ada validation errors
+        if (error.response.data.errors) {
+          const errors = error.response.data.errors;
+          const errorList = Object.entries(errors)
+            .map(([field, messages]) => {
+              const msg = Array.isArray(messages) ? messages[0] : messages;
+              return `${field}: ${msg}`;
+            })
+            .join("\n");
+          errorMessage = errorList || errorMessage;
+        }
+      } else if (error.code === 'ERR_NETWORK') {
+        errorMessage = "❌ Tidak bisa terhubung ke backend!\n\nPastikan:\n1. Backend Express running di http://127.0.0.1:3001\n2. Jalankan: cd backend-express && npm run dev\n3. Database sudah connected (Neon)";
+      } else if (error.message) {
+        errorMessage += error.message;
+      } else {
+        errorMessage += "Cek kembali data kamu.";
+      }
+      
+      console.error("📋 Final error message:", errorMessage);
       alert(errorMessage);
     } finally {
       setLoading(false);
