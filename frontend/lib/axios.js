@@ -1,13 +1,12 @@
 import axios from "axios";
 
-// Express Backend URL (hosted on Vercel)
-// Development: http://localhost:3001/api
-// Production: Set NEXT_PUBLIC_API_URL in .env.production or Vercel environment variables
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:3001/api";
+// ✅ UPDATED: Pakai Next.js API Routes (built-in)
+// Development & Production: /api (sama-sama, karena Next.js handle routing)
+const API_URL = "/api";
 
 // Debug: Log API URL (hanya di development)
 if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
-  console.log("🔗 API URL:", API_URL);
+  console.log("🔗 API URL:", API_URL, "(Next.js API Routes)");
 }
 
 const api = axios.create({
