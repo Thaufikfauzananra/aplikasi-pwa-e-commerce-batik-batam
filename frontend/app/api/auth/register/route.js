@@ -11,6 +11,18 @@ function validateEmail(email) {
   return re.test(String(email).toLowerCase());
 }
 
+// Handle CORS preflight
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
+}
+
 export async function POST(request) {
   let client;
   try {
@@ -49,7 +61,14 @@ export async function POST(request) {
         status: false,
         message: 'Validation failed',
         errors,
-      }, { status: 422 });
+      }, { 
+        status: 422,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        },
+      });
     }
 
     // Get DB connection from singleton pool
@@ -69,7 +88,14 @@ export async function POST(request) {
         errors: {
           email: ['Email sudah terdaftar'],
         },
-      }, { status: 422 });
+      }, { 
+        status: 422,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        },
+      });
     }
 
     // Hash password
@@ -104,7 +130,14 @@ export async function POST(request) {
       token,
       access_token: token,
       role: user.role,
-    }, { status: 201 });
+    }, { 
+      status: 201,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      },
+    });
 
   } catch (error) {
     console.error('[REGISTER] Error:', {
@@ -116,7 +149,14 @@ export async function POST(request) {
       status: false,
       message: 'Terjadi kesalahan server: ' + error.message,
       error: process.env.NODE_ENV === 'production' ? 'Internal Server Error' : error.message,
-    }, { status: 500 });
+    }, { 
+      status: 500,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      },
+    });
   } finally {
     if (client) client.release();
   }

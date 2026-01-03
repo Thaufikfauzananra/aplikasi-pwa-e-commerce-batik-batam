@@ -11,6 +11,18 @@ function validateEmail(email) {
   return re.test(String(email).toLowerCase());
 }
 
+// Handle CORS preflight
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
+}
+
 export async function POST(request) {
   let client;
   try {
@@ -33,7 +45,14 @@ export async function POST(request) {
       return NextResponse.json({
         status: false,
         errors,
-      }, { status: 422 });
+      }, { 
+        status: 422,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        },
+      });
     }
 
     // Get DB connection from singleton pool
@@ -53,7 +72,14 @@ export async function POST(request) {
         errors: {
           email: ['Email atau password salah'],
         },
-      }, { status: 401 });
+      }, { 
+        status: 401,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        },
+      });
     }
 
     const user = userResult.rows[0];
@@ -68,7 +94,14 @@ export async function POST(request) {
         errors: {
           password: ['Email atau password salah'],
         },
-      }, { status: 401 });
+      }, { 
+        status: 401,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        },
+      });
     }
 
     // Generate JWT token
@@ -91,7 +124,14 @@ export async function POST(request) {
       token,
       access_token: token,
       role: user.role,
-    }, { status: 200 });
+    }, { 
+      status: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      },
+    });
 
   } catch (error) {
     console.error('[LOGIN] Error:', error);
@@ -100,7 +140,14 @@ export async function POST(request) {
       status: false,
       message: 'Terjadi kesalahan server',
       error: process.env.NODE_ENV === 'production' ? 'Internal Server Error' : error.message,
-    }, { status: 500 });
+    }, { 
+      status: 500,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      },
+    });
   } finally {
     if (client) client.release();
   }

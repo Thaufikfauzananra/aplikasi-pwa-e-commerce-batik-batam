@@ -46,7 +46,7 @@ export default function LoginPage() {
 
     try {
       // Send Google token to backend
-      const response = await api.post("/login-with-google", {
+      const response = await api.post("/auth/login-with-google", {
         token: credentialResponse.credential,
       });
 
@@ -64,15 +64,42 @@ export default function LoginPage() {
 
     } catch (error) {
       let errorMessage = "Login Google gagal!";
+      let errorDetails = "";
 
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.code === "ERR_NETWORK") {
-        errorMessage = "Tidak bisa terhubung ke backend!";
+      // Handle different error types
+      if (error.response?.data) {
+        if (error.response.data.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.response.status === 401) {
+          errorMessage = "Token Google tidak valid atau telah kedaluwarsa!";
+        } else if (error.response.status >= 500) {
+          errorMessage = "Terjadi kesalahan pada server. Silakan coba lagi nanti.";
+        }
+      } else if (error.code === "ERR_NETWORK" || error.message?.includes("Network Error")) {
+        errorMessage = "Tidak bisa terhubung ke server!";
+        errorDetails = "\n\nPastikan backend API sudah berjalan.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      // Log error for debugging with safe property access
+      try {
+        const errorLog = {
+          message: error?.message || String(error) || "Unknown error",
+          code: error?.code || "UNKNOWN",
+          status: error?.response?.status || null,
+          data: error?.response?.data || null,
+          errorInfo: error?.errorInfo || null,
+          errorString: String(error),
+        };
+        console.error("Google Login Error:", errorLog);
+      } catch (logError) {
+        // Fallback if logging fails
+        console.error("Google Login Error (fallback):", String(error));
       }
 
       setError(errorMessage);
-      alert(errorMessage);
+      alert(errorMessage + errorDetails);
     } finally {
       setLoading(false);
     }
@@ -91,7 +118,7 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const response = await api.post("/login", {
+      const response = await api.post("/auth/login", {
         email,
         password,
       });
@@ -118,15 +145,61 @@ export default function LoginPage() {
 
     } catch (error) {
       let errorMessage = "Login gagal!";
+      let errorDetails = "";
 
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.code === "ERR_NETWORK") {
-        errorMessage = "Tidak bisa terhubung ke backend!";
+      // Handle different error types
+      if (error.response?.data) {
+        // Server returned error response
+        if (error.response.data.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.response.data.errors) {
+          // Validation errors
+          const errors = error.response.data.errors;
+          const errorList = Object.entries(errors)
+            .map(([field, messages]) => {
+              const msg = Array.isArray(messages) ? messages[0] : messages;
+              return `${field}: ${msg}`;
+            })
+            .join("\n");
+          errorMessage = errorList || errorMessage;
+        } else if (error.response.status === 401) {
+          errorMessage = "Email atau password salah!";
+        } else if (error.response.status === 422) {
+          errorMessage = "Data yang dimasukkan tidak valid!";
+        } else if (error.response.status >= 500) {
+          errorMessage = "Terjadi kesalahan pada server. Silakan coba lagi nanti.";
+        }
+      } else if (error.code === "ERR_NETWORK" || error.message?.includes("Network Error")) {
+        // Network error
+        errorMessage = "Tidak bisa terhubung ke server!";
+        errorDetails = "\n\nPastikan:\n1. Backend API sudah berjalan\n2. Koneksi internet stabil\n3. Cek console untuk detail error";
+      } else if (error.code === "ECONNABORTED" || error.message?.includes("timeout")) {
+        // Timeout error
+        errorMessage = "Request timeout! Server tidak merespons.";
+        errorDetails = "\n\nSilakan coba lagi atau periksa koneksi internet Anda.";
+      } else if (error.message) {
+        // Other errors
+        errorMessage = error.message;
+      }
+
+      // Log error for debugging with safe property access
+      try {
+        const errorLog = {
+          message: error?.message || String(error) || "Unknown error",
+          code: error?.code || "UNKNOWN",
+          status: error?.response?.status || null,
+          data: error?.response?.data || null,
+          errorInfo: error?.errorInfo || null,
+          errorString: String(error),
+        };
+        console.error("Login Error:", errorLog);
+      } catch (logError) {
+        // Fallback if logging fails
+        console.error("Login Error (fallback):", String(error));
       }
 
       setError(errorMessage);
-      alert(errorMessage);
+      alert(errorMessage + errorDetails);
     } finally {
       setLoading(false);
     }

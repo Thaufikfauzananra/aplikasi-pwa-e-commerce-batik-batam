@@ -47,7 +47,7 @@ export default function RegisterPage() {
         api_url: process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:3001/api"
       });
       
-      const response = await api.post("/register", {
+      const response = await api.post("/auth/register", {
         name,
         email,
         password,
@@ -81,23 +81,16 @@ export default function RegisterPage() {
         router.push("/login");
       }
     } catch (error) {
-      console.error("❌ Register gagal:", {
-        status: error.response?.status,
-        data: error.response?.data,
-        message: error.message,
-        config: error.config?.url
-      });
-      
-      let errorMessage = "Registrasi gagal! ";
-      
-      // Jika ada response dari server
+      let errorMessage = "Registrasi gagal!";
+      let errorDetails = "";
+
+      // Handle different error types
       if (error.response?.data) {
-        // Jika ada message field
+        // Server returned error response
         if (error.response.data.message) {
-          errorMessage += error.response.data.message;
-        }
-        // Jika ada validation errors
-        if (error.response.data.errors) {
+          errorMessage = error.response.data.message;
+        } else if (error.response.data.errors) {
+          // Validation errors
           const errors = error.response.data.errors;
           const errorList = Object.entries(errors)
             .map(([field, messages]) => {
@@ -106,17 +99,43 @@ export default function RegisterPage() {
             })
             .join("\n");
           errorMessage = errorList || errorMessage;
+        } else if (error.response.status === 422) {
+          errorMessage = "Data yang dimasukkan tidak valid!";
+        } else if (error.response.status >= 500) {
+          errorMessage = "Terjadi kesalahan pada server. Silakan coba lagi nanti.";
         }
-      } else if (error.code === 'ERR_NETWORK') {
-        errorMessage = "❌ Tidak bisa terhubung ke backend!\n\nPastikan:\n1. Backend Express running di http://127.0.0.1:3001\n2. Jalankan: cd backend-express && npm run dev\n3. Database sudah connected (Neon)";
+      } else if (error.code === "ERR_NETWORK" || error.message?.includes("Network Error")) {
+        // Network error
+        errorMessage = "Tidak bisa terhubung ke server!";
+        errorDetails = "\n\nPastikan:\n1. Backend API sudah berjalan\n2. Koneksi internet stabil\n3. Cek console untuk detail error";
+      } else if (error.code === "ECONNABORTED" || error.message?.includes("timeout")) {
+        // Timeout error
+        errorMessage = "Request timeout! Server tidak merespons.";
+        errorDetails = "\n\nSilakan coba lagi atau periksa koneksi internet Anda.";
       } else if (error.message) {
-        errorMessage += error.message;
+        // Other errors
+        errorMessage = error.message;
       } else {
-        errorMessage += "Cek kembali data kamu.";
+        errorMessage = "Cek kembali data yang dimasukkan.";
       }
-      
-      console.error("📋 Final error message:", errorMessage);
-      alert(errorMessage);
+
+      // Log error for debugging with safe property access
+      try {
+        const errorLog = {
+          message: error?.message || String(error) || "Unknown error",
+          code: error?.code || "UNKNOWN",
+          status: error?.response?.status || null,
+          data: error?.response?.data || null,
+          errorInfo: error?.errorInfo || null,
+          errorString: String(error),
+        };
+        console.error("Register Error:", errorLog);
+      } catch (logError) {
+        // Fallback if logging fails
+        console.error("Register Error (fallback):", String(error));
+      }
+
+      alert(errorMessage + errorDetails);
     } finally {
       setLoading(false);
     }

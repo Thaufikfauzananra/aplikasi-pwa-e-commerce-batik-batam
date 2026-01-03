@@ -53,38 +53,129 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    const { response, config, message } = error;
-    
-    // Log detailed error information
-    console.error("❌ API Error:", {
-      status: response?.status,
-      statusText: response?.statusText,
-      url: config?.url,
-      method: config?.method?.toUpperCase(),
-      data: response?.data,
-      message: message,
-      timestamp: new Date().toISOString(),
-    });
+    try {
+      // Safely extract error properties
+      const response = error?.response;
+      const config = error?.config;
+      const message = error?.message;
+      const code = error?.code;
+      const request = error?.request;
+      
+      // Determine error type
+      let errorType = "unknown";
+      if (code === "ERR_NETWORK" || code === "ECONNABORTED" || code === "ERR_INTERNET_DISCONNECTED" || !response) {
+        errorType = "network";
+      } else if (response?.status >= 500) {
+        errorType = "server";
+      } else if (response?.status >= 400) {
+        errorType = "client";
+      }
+      
+      // Build error info object safely
+      const errorInfo = {
+        type: errorType,
+        code: code || "UNKNOWN",
+        message: message || String(error) || "Unknown error occurred",
+        timestamp: new Date().toISOString(),
+      };
 
-    // Jika token expired atau unauthorized, redirect ke login
-    if (response?.status === 401) {
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("token");
-        localStorage.removeItem("userData");
-        localStorage.removeItem("userRole");
-        // Jangan redirect di halaman login/register
-        if (!window.location.pathname.includes("/login") && !window.location.pathname.includes("/register")) {
-          window.location.href = "/login";
+      // Add response info if available
+      if (response) {
+        errorInfo.status = response.status;
+        errorInfo.statusText = response.statusText;
+        try {
+          errorInfo.data = response.data;
+        } catch (e) {
+          errorInfo.data = "Unable to parse response data";
         }
       }
-    }
 
-    // Jika 500 error, log ke console dengan lebih detail
-    if (response?.status === 500) {
-      console.error("⚠️ Server Error (500):", response.data);
-    }
+      // Add request info if available
+      if (config) {
+        errorInfo.url = config.url || "unknown";
+        errorInfo.method = config.method?.toUpperCase() || "UNKNOWN";
+        errorInfo.baseURL = config.baseURL || "unknown";
+      }
 
-    return Promise.reject(error);
+      // Add request object info for network errors
+      if (request && !response) {
+        try {
+          errorInfo.requestInfo = {
+            readyState: request.readyState,
+            status: request.status,
+          };
+        } catch (e) {
+          errorInfo.requestInfo = "Unable to parse request info";
+        }
+      }
+
+      // Log error with fallback
+      try {
+        console.error("❌ API Error:", errorInfo);
+      } catch (e) {
+        console.error("❌ API Error (fallback):", {
+          type: errorType,
+          code: code || "UNKNOWN",
+          message: String(error),
+        });
+      }
+
+      // Handle network errors
+      if (errorType === "network") {
+        try {
+          console.error("🌐 Network Error Details:", {
+            code: code || "UNKNOWN",
+            message: message || "Network error",
+            url: config?.url || "unknown",
+            baseURL: config?.baseURL || "unknown",
+            hint: "Check if the API server is running and accessible",
+          });
+        } catch (e) {
+          console.error("🌐 Network Error (unable to log details)");
+        }
+      }
+
+      // Jika token expired atau unauthorized, redirect ke login
+      if (response?.status === 401) {
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.removeItem("token");
+            localStorage.removeItem("userData");
+            localStorage.removeItem("userRole");
+            // Jangan redirect di halaman login/register
+            if (!window.location.pathname.includes("/login") && !window.location.pathname.includes("/register")) {
+              window.location.href = "/login";
+            }
+          } catch (e) {
+            console.error("Error handling 401 redirect:", e);
+          }
+        }
+      }
+
+      // Jika 500 error, log ke console dengan lebih detail
+      if (response?.status === 500) {
+        try {
+          console.error("⚠️ Server Error (500):", response.data);
+        } catch (e) {
+          console.error("⚠️ Server Error (500): Unable to parse error data");
+        }
+      }
+
+      // Enhance error object with additional info for better error handling
+      try {
+        error.errorInfo = errorInfo;
+      } catch (e) {
+        // If we can't add errorInfo, at least ensure error is rejectable
+        console.warn("Could not enhance error object with errorInfo");
+      }
+      
+      return Promise.reject(error);
+    } catch (handlerError) {
+      // Fallback if error handler itself fails
+      console.error("❌ Error handler failed:", handlerError);
+      console.error("❌ Original error:", String(error));
+      return Promise.reject(error);
+    }
   }
 );
 
