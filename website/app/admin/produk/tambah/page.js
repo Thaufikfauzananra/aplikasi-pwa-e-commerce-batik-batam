@@ -11,24 +11,43 @@ export default function TambahProduk() {
     name: "",
     category: "",
     price: "",
-    stock: "",
     description: "",
     image: null,
-    size: [], // Array untuk menyimpan ukuran yang dipilih
+    sizes: {
+      S: { enabled: false, stock: "" },
+      M: { enabled: false, stock: "" },
+      L: { enabled: false, stock: "" },
+      XL: { enabled: false, stock: "" },
+      XXL: { enabled: false, stock: "" },
+    },
   });
 
   const sizeOptions = ["S", "M", "L", "XL", "XXL"];
 
-  const handleSizeChange = (size) => {
-    setFormData((prev) => {
-      if (prev.size.includes(size)) {
-        // Hapus ukuran jika sudah dipilih
-        return { ...prev, size: prev.size.filter((s) => s !== size) };
-      } else {
-        // Tambah ukuran jika belum dipilih
-        return { ...prev, size: [...prev.size, size] };
-      }
-    });
+  const handleSizeToggle = (size) => {
+    setFormData((prev) => ({
+      ...prev,
+      sizes: {
+        ...prev.sizes,
+        [size]: {
+          ...prev.sizes[size],
+          enabled: !prev.sizes[size].enabled,
+        },
+      },
+    }));
+  };
+
+  const handleStockChange = (size, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      sizes: {
+        ...prev.sizes,
+        [size]: {
+          ...prev.sizes[size],
+          stock: value,
+        },
+      },
+    }));
   };
 
   useEffect(() => {
@@ -44,8 +63,18 @@ export default function TambahProduk() {
     e.preventDefault();
     
     // Validasi ukuran
-    if (formData.size.length === 0) {
+    const enabledSizes = Object.entries(formData.sizes)
+      .filter(([_, data]) => data.enabled)
+      .map(([size, data]) => ({ size, stock: parseInt(data.stock) || 0 }));
+
+    if (enabledSizes.length === 0) {
       alert("Pilih minimal satu ukuran produk");
+      return;
+    }
+
+    // Validasi stock
+    if (enabledSizes.some(s => isNaN(s.stock) || s.stock < 0)) {
+      alert("Stock harus berupa angka positif");
       return;
     }
 
@@ -64,23 +93,8 @@ export default function TambahProduk() {
       submitData.append("name", formData.name);
       submitData.append("category", formData.category);
       submitData.append("price", formData.price);
-      submitData.append("stock", formData.stock);
       submitData.append("description", formData.description);
-      
-      // Append size array - Coba beberapa format untuk kompatibilitas Laravel
-      if (Array.isArray(formData.size) && formData.size.length > 0) {
-        // Method 1: Append sebagai size[] (Laravel standard)
-        formData.size.forEach((size) => {
-          submitData.append("size[]", size);
-        });
-        
-        // Method 2: Juga kirim sebagai JSON string untuk backup
-        submitData.append("size_json", JSON.stringify(formData.size));
-      } else {
-        alert("Pilih minimal satu ukuran produk!");
-        setLoading(false);
-        return;
-      }
+      submitData.append("sizes", JSON.stringify(enabledSizes));
 
       // Append image if exists
       if (formData.image) {
@@ -88,7 +102,7 @@ export default function TambahProduk() {
       }
 
       // Send to API
-      const response = await api.post("/products", submitData, {
+      const response = await api.post("/api/products", submitData, {
         headers: {
           "Content-Type": "multipart/form-data",
           "Authorization": `Bearer ${token}`,
@@ -97,8 +111,6 @@ export default function TambahProduk() {
 
       if (response.data.status) {
         alert("Produk berhasil ditambahkan!");
-        // Trigger event untuk refresh halaman lain
-        window.dispatchEvent(new Event('productsUpdated'));
         router.push("/admin/produk");
       } else {
         throw new Error(response.data.message || "Gagal menambahkan produk");
@@ -194,28 +206,52 @@ export default function TambahProduk() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Ukuran Produk
               </label>
-              <div className="flex flex-wrap gap-3">
+              <p className="text-xs text-gray-500 mb-3">Isi stock per ukuran. Total stock ditambah otomatis.</p>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 {sizeOptions.map((size) => (
-                  <label
+                  <div
                     key={size}
-                    className={`flex items-center gap-2 px-4 py-2 border-2 rounded-lg cursor-pointer transition-colors ${
-                      formData.size.includes(size)
-                        ? "bg-[#704d31] text-white border-[#704d31]"
-                        : "bg-white text-gray-700 border-gray-300 hover:border-[#704d31]"
+                    className={`border-2 rounded-lg p-3 transition-colors ${
+                      formData.sizes[size].enabled
+                        ? "bg-[#704d31] border-[#704d31]"
+                        : "bg-white border-gray-300"
                     }`}
                   >
+                    <label className="flex items-center gap-2 cursor-pointer mb-2">
+                      <input
+                        type="checkbox"
+                        checked={formData.sizes[size].enabled}
+                        onChange={() => handleSizeToggle(size)}
+                        className="w-4 h-4 rounded"
+                      />
+                      <span
+                        className={`font-bold text-lg ${
+                          formData.sizes[size].enabled
+                            ? "text-white"
+                            : "text-gray-700"
+                        }`}
+                      >
+                        {size}
+                      </span>
+                    </label>
                     <input
-                      type="checkbox"
-                      checked={formData.size.includes(size)}
-                      onChange={() => handleSizeChange(size)}
-                      className="sr-only"
+                      type="number"
+                      min="0"
+                      value={formData.sizes[size].stock}
+                      onChange={(e) => handleStockChange(size, e.target.value)}
+                      disabled={!formData.sizes[size].enabled}
+                      placeholder="0"
+                      className={`w-full px-2 py-1 border rounded text-sm text-center ${
+                        formData.sizes[size].enabled
+                          ? "bg-white border-white"
+                          : "bg-gray-100 border-gray-300 text-gray-400"
+                      }`}
                     />
-                    <span className="font-medium">{size}</span>
-                  </label>
+                  </div>
                 ))}
               </div>
-              {formData.size.length === 0 && (
-                <p className="text-sm text-amber-600 mt-1">
+              {Object.values(formData.sizes).every(s => !s.enabled) && (
+                <p className="text-sm text-amber-600 mt-2">
                   Pilih minimal satu ukuran
                 </p>
               )}
