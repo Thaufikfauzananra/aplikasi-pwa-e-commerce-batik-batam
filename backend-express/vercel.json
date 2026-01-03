@@ -11,10 +11,5 @@
       "src": "/(.*)",
       "dest": "src/index.js"
     }
-  ],
-  "env": {
-    "DATABASE_URL": "@DATABASE_URL",
-    "JWT_SECRET": "@JWT_SECRET",
-    "GOOGLE_CLIENT_ID": "@GOOGLE_CLIENT_ID"
-  }
+  ]
 }
