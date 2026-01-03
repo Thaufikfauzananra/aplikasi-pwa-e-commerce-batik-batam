@@ -123,35 +123,6 @@ export default function EditProduk() {
       reader.readAsDataURL(file);
     }
   };
-        let sizeArray = [];
-        if (product.size) {
-          if (Array.isArray(product.size)) {
-            sizeArray = product.size;
-          } else if (typeof product.size === 'string') {
-            sizeArray = product.size.split(',').map(s => s.trim()).filter(s => s);
-          }
-        }
-        
-        setFormData({
-          name: product.name || "",
-          category: product.category || "",
-          price: product.price || "",
-          stock: product.stock || "",
-          description: product.description || "",
-          image: null,
-          size: sizeArray,
-        });
-      } catch (err) {
-        console.error("Gagal ambil produk:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (params.id) {
-      fetchProduct();
-    }
-  }, [params.id, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
