@@ -1,11 +1,7 @@
 import { NextResponse } from 'next/server';
 import bcryptjs from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { Pool } from 'pg';
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
+import { getPool } from '../../../../lib/db';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key';
 
@@ -56,7 +52,8 @@ export async function POST(request) {
       }, { status: 422 });
     }
 
-    // Get DB connection
+    // Get DB connection from singleton pool
+    const pool = getPool();
     client = await pool.connect();
 
     // Check if email already exists
