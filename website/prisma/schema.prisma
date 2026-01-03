@@ -10,18 +10,279 @@ datasource db {
   url       = env("DATABASE_URL")
 }
 
+// ============== USER & AUTH ==============
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String
-  password String
-  role  String  @default("user") // "user" or "admin"
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                    Int       @id @default(autoincrement())
+  email                 String    @unique
+  name                  String
+  password              String
+  role                  String    @default("user") // "user" or "admin"
+  avatar                String?   // URL to profile picture
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  // Relations
+  addresses             Address[]
+  orders                Order[]
+  wishlist              Wishlist[]
+  cart                  Cart?
+  notifications         Notification[]
+  payments              Payment[]
 }
 
 model PasswordResetToken {
-  email String @id
-  token String
-  createdAt DateTime @default(now())
+  email     String    @id
+  token     String
+  createdAt DateTime  @default(now())
+}
+
+// ============== PRODUCTS & CATALOG ==============
+model Product {
+  id                    Int       @id @default(autoincrement())
+  name                  String
+  slug                  String    @unique
+  description           String?
+  price                 Decimal   @db.Decimal(10, 2)
+  discount              Decimal?  @db.Decimal(5, 2) // Discount percentage
+  category              String    // Pakaian Wanita, Pakaian Pria, Aksesoris, Kain Batik
+  subcategory           String?   // e.g. Kemeja, Batik Tulis
+  stock                 Int       @default(0)
+  sku                   String?   @unique
+  weight                Float?    // in grams
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  // Relations
+  images                ProductImage[]
+  sizes                 ProductSize[]
+  wishlistItems         Wishlist[]
+  cartItems             CartItem[]
+  orderItems            OrderItem[]
+}
+
+model ProductImage {
+  id                    Int       @id @default(autoincrement())
+  productId             Int
+  imageUrl              String
+  altText               String?
+  isPrimary             Boolean   @default(false)
+  createdAt             DateTime  @default(now())
+
+  // Relations
+  product               Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+}
+
+model ProductSize {
+  id                    Int       @id @default(autoincrement())
+  productId             Int
+  size                  String    // S, M, L, XL, custom size, etc
+  stock                 Int       @default(0)
+  createdAt             DateTime  @default(now())
+
+  // Relations
+  product               Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  cartItems             CartItem[]
+  orderItems            OrderItem[]
+
+  @@index([productId])
+}
+
+// ============== SHOPPING CART ==============
+model Cart {
+  id                    Int       @id @default(autoincrement())
+  userId                Int       @unique
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  // Relations
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items                 CartItem[]
+
+  @@index([userId])
+}
+
+model CartItem {
+  id                    Int       @id @default(autoincrement())
+  cartId                Int
+  productId             Int
+  productSizeId         Int
+  quantity              Int       @default(1)
+  price                 Decimal   @db.Decimal(10, 2) // Price at time of adding
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  // Relations
+  cart                  Cart      @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product               Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  size                  ProductSize @relation(fields: [productSizeId], references: [id], onDelete: Cascade)
+
+  @@index([cartId])
+  @@index([productId])
+  @@index([productSizeId])
+}
+
+// ============== WISHLIST ==============
+model Wishlist {
+  id                    Int       @id @default(autoincrement())
+  userId                Int
+  productId             Int
+  createdAt             DateTime  @default(now())
+
+  // Relations
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product               Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@index([productId])
+}
+
+// ============== ADDRESSES ==============
+model Address {
+  id                    Int       @id @default(autoincrement())
+  userId                Int
+  label                 String    // Rumah, Kantor, Lainnya
+  recipientName         String
+  phoneNumber           String
+  province              String
+  city                  String
+  district              String    // Kecamatan
+  postalCode            String
+  streetAddress         String
+  isDefault             Boolean   @default(false)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  // Relations
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders                Order[]
+
+  @@index([userId])
+}
+
+// ============== ORDERS ==============
+model Order {
+  id                    Int       @id @default(autoincrement())
+  orderNumber           String    @unique // e.g., ORD-20240101-001
+  userId                Int
+  addressId             Int
+  paymentId             Int?      @unique
+  status                String    @default("pending") // pending, paid, processing, shipped, delivered, cancelled
+  paymentStatus         String    @default("unpaid") // unpaid, paid, failed, refunded
+  subtotal              Decimal   @db.Decimal(12, 2)
+  discount              Decimal   @db.Decimal(12, 2) @default(0)
+  tax                   Decimal   @db.Decimal(12, 2) @default(0)
+  shippingCost          Decimal   @db.Decimal(12, 2) @default(0)
+  total                 Decimal   @db.Decimal(12, 2)
+  notes                 String?
+  trackingNumber        String?
+  shippingProvider      String?   // JNE, Tiki, Grab, etc
+  shippedAt             DateTime?
+  deliveredAt           DateTime?
+  cancelledAt           DateTime?
+  cancelReason          String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  // Relations
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  address               Address   @relation(fields: [addressId], references: [id])
+  payment               Payment?  @relation(fields: [paymentId], references: [id])
+  items                 OrderItem[]
+
+  @@index([userId])
+  @@index([addressId])
+  @@index([paymentId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id                    Int       @id @default(autoincrement())
+  orderId               Int
+  productId             Int
+  productSizeId         Int
+  productName           String
+  quantity              Int
+  price                 Decimal   @db.Decimal(10, 2) // Price per unit at time of order
+  subtotal              Decimal   @db.Decimal(12, 2)
+  createdAt             DateTime  @default(now())
+
+  // Relations
+  order                 Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product               Product   @relation(fields: [productId], references: [id])
+  size                  ProductSize @relation(fields: [productSizeId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+// ============== PAYMENTS (Midtrans) ==============
+model Payment {
+  id                    Int       @id @default(autoincrement())
+  userId                Int
+  transactionId         String    @unique // Midtrans transaction ID
+  orderId               Int?      @unique
+  amount                Decimal   @db.Decimal(12, 2)
+  currency              String    @default("IDR")
+  status                String    @default("pending") // pending, paid, failed, cancelled, refunded
+  paymentMethod         String?   // credit_card, bank_transfer, e_wallet, etc
+  snapToken             String?   // Midtrans Snap Token
+  snapUrl               String?   // Midtrans Snap URL for payment
+  vendorTransactionId   String?   // Vendor-specific transaction ID (if any)
+  paidAt                DateTime?
+  failureReason         String?
+  metadata              String?   // JSON string for additional data
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  // Relations
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order                 Order?
+  history               PaymentHistory[]
+
+  @@index([userId])
+  @@index([transactionId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model PaymentHistory {
+  id                    Int       @id @default(autoincrement())
+  paymentId             Int
+  status                String
+  message               String?
+  metadata              String?   // JSON string for raw response data
+  createdAt             DateTime  @default(now())
+
+  // Relations
+  payment               Payment   @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId])
+  @@index([createdAt])
+}
+
+// ============== NOTIFICATIONS ==============
+model Notification {
+  id                    Int       @id @default(autoincrement())
+  userId                Int
+  type                  String    // order, payment, product, promo, system
+  title                 String
+  message               String
+  relatedOrderId        Int?
+  relatedProductId      Int?
+  isRead                Boolean   @default(false)
+  readAt                DateTime?
+  actionUrl             String?   // URL to navigate when clicked
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  // Relations
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
 }
