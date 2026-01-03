@@ -2,7 +2,10 @@ import { Pool } from 'pg';
 import fs from 'fs';
 import path from 'path';
 
-const DATABASE_URL = 'postgresql://neondb_owner:npg_drfijXmxYQ71@ep-polished-salad-a1u18ecf-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
+// Ambil dari environment atau gunakan default
+const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_drfijXmxYQ71@ep-polished-salad-a1u18ecf-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
+
+console.log('🔗 Connecting to:', DATABASE_URL.substring(0, 60) + '...');
 
 const pool = new Pool({
   connectionString: DATABASE_URL,
